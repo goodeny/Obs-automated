@@ -1,18 +1,23 @@
+import os
+os.system('pip install beautifulsoup4')
+os.system('pip install requests')
 from tkinter import *
 from bs4 import BeautifulSoup
 from GUI import center
 import requests
 import time
 import threading
+import json
 
 # ~ goodeny ~
 
 class Software():
     def __init__(self):
+        self.create_db_json()
         self.create_note()
         self.window = Tk()
         #usefull variables
-        self.news_quantity = 3
+        self.news_quantity = self.read_json()['quantity_news']
         self.message = "mensagem personalizada"
         self.name_window = f"{self.get_name_window()}"
 
@@ -27,8 +32,8 @@ class Software():
         self.logo_name()
         self.settings()
         self.start_button()
-        self.log_error('Ready to run!', 0)
-        
+        self.log_error('Ready to run!', 0) 
+
     def start_button(self):
         self.image_start_btn = PhotoImage(file='assets/btn_start.png')
         self.start_btn = Button(self.window, image=self.image_start_btn, cursor="hand2",bd=0, bg=self.BG_COLOR, activebackground=self.BG_COLOR, 
@@ -49,6 +54,21 @@ class Software():
         else:
             self.log_label.config(fg='#37FF33', text=message)
             self.log_label.update()
+
+    def create_db_json(self):
+        try:
+            with open('data.json', 'x') as f:
+                pass
+            structure = {
+                "window_name": "",
+                "message": "Custom message",
+                "quantity_news": 3
+            }
+            
+            with open('data.json', 'w') as file_w:
+                    json.dump(structure, file_w, indent=4)
+        except:
+            pass
 
     def running_button(self):
         self.image_running_buttom = PhotoImage(file='assets/btn_running.png')
@@ -90,7 +110,7 @@ class Software():
 
         self.text_message = Text(self.window_settings, font="16")
         self.text_message.place(x=220, y=100, width=250, height=180)
-        self.text_message.insert("1.0","Custom message")
+        self.text_message.insert("1.0",self.read_json()['message'])
 
         self.save_button_img = PhotoImage(file="assets/btn_save.png")
         self.save_button = Button(self.window_settings, image=self.save_button_img, bd=0, activebackground=self.BG_COLOR, bg=self.BG_COLOR, command=lambda: self.save())
@@ -98,10 +118,38 @@ class Software():
 
         self.window_settings.mainloop()
 
+    def read_json(self):
+        with open("data.json", "r") as f:
+            data = json.load(f)
+        return data
+
+    def insert_message_json(self, message):
+        data = self.read_json()
+        
+        data['message'] = message
+        with open("data.json", "w") as file:
+            json.dump(data, file, indent=4)
+
+    def insert_name_window(self, name):
+        data = self.read_json()
+        
+        data['window_name'] = name
+        with open("data.json", "w") as file:
+            json.dump(data, file, indent=4)
+    
+    def insert_quantity_news_json(self, qnt):
+        data = self.read_json()
+        
+        data['quantity_news'] = qnt
+        with open("data.json", "w") as file:
+            json.dump(data, file, indent=4)
+            
     def save(self):
         self.message = self.text_message.get('1.0', "end-1c")
+        self.insert_message_json(self.message)
         try:
             self.news_quantity = int(self.Entry_quantity.get())
+            self.insert_quantity_news_json(self.news_quantity)
             try:
                 self.log_label.destroy()
             except:
@@ -114,9 +162,12 @@ class Software():
             except:
                 pass
             self.log_error('Value error in settings <News_Quantity> a default value was set <3>', 1)
+            self.insert_quantity_news_json(3)
+            self.news_quantity = 3
         if self.message == "":
             try:
                 self.text_message.insert('1.0',"Custom message")
+                self.insert_message_json('Custom message')
             except:
                 pass
         self.window_settings.destroy()
@@ -143,16 +194,10 @@ class Software():
                 pass
         except:
             pass
-        try:
-            with open("GUI.txt", 'x') as f:
-                pass
-        except:
-            pass
     
     def change_name_window(self):
         if len(self.Window_name.get()) <= 20:
-            with open("GUI.txt", "w") as f:
-                f.write(self.Window_name.get())
+            self.insert_name_window(self.Window_name.get())
             self.window_settings.destroy()
             try:
                 self.log_label.destroy()
@@ -168,8 +213,7 @@ class Software():
             self.log_error('Error to set window name (max caractres/value = null)', 1)
 
     def get_name_window(self):
-        with open('GUI.txt', 'r') as f:
-            name = f.read()
+        name = self.read_json()['window_name']
         if name == "":
             name = "Automated - OBS"
         return name
@@ -178,11 +222,12 @@ class Software():
         try:
             self.start_btn.destroy()
             self.running_button()
-            t = self.news_quantity
-            m = self.message
+            t = self.read_json()['quantity_news']
+            m = self.read_json()['message']
             note = 0
             insert_note_count = 0
             #print(len(self.get_news_globo()))
+            
             with open('data.txt', 'w', encoding="utf-8") as file:
                 while note != len(self.get_news_globo()):
                     if insert_note_count == t:
